@@ -1,0 +1,1 @@
+# Agent V04 - Tool User with registry-based tool management
