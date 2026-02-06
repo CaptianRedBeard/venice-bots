@@ -1,6 +1,6 @@
 # Venice Bots
 
-An architectural showcase detailing the evolution of AI agents from a simple stateless responder to a sophisticated, secure, and intelligent multi-agent system. This project documents the step-by-step construction of a powerful cognitive framework. Each agent version (`v01` through `v08`) represents a major conceptual leap, building on the stable foundation of its predecessor.
+An architectural showcase detailing the evolution of AI agents from a simple stateless responder to a sophisticated, secure, and intelligent multi-agent system. This project documents the step-by-step construction of a powerful cognitive framework. Each agent version represents a major conceptual leap, building on the stable foundation of its predecessor.
 
 ## Motivation
 
@@ -18,70 +18,93 @@ The architecture is built on **separation of concerns**. We've separated an agen
 ## Quick Start
 
 ### Prerequisites
+
 - Python 3.8+
 - A Venice.ai API key
 
 ### Installation
 
-1.  **Clone the Repository**
-    ```bash
-    git clone https://github.com/CaptianRedBeard/venice-bots.git
-    cd venice-bots
-    ```
+1. **Clone the Repository**
+   ```bash
+   git clone https://github.com/CaptianRedBeard/venice-bots.git
+   cd venice-bots
+   ```
 
-2.  **Set Up Environment**
-    ```bash
-    python -m venv .venv
-    source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-    pip install python-dotenv openai
-    ```
+2. **Set Up Environment**
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+   pip install python-dotenv openai
+   ```
 
-3.  **Configure API Key**
-    -   Create a `.env` file in the project root.
-    -   Add your Venice.ai API key:
-        ```
-        VENICE_API_KEY=your_api_key_here
-        ```
+3. **Configure API Key & Models**
+   - Create a `.env` file in the project root.
+   - Add your Venice.ai API key: `VENICE_API_KEY=your_api_key_here`
+   - (Optional) Review default model roles in `config/models.json`.
 
 ### Running an Agent
-The `agent_v08` showcase is the recommended starting point.
+
+The `agent_v10` showcase is the recommended starting point for our modern, stateless architecture.
 
 ```bash
-# Run the final showcase agent
-python -m agents.agent_v08_the_keeper_of_eldoria.agent_v08
+# Run the new standard for stateless agents
+python -m agents.agent_v10_the_tool_first_agent.agent_v10
 
-# Run the foundational modern agent
+# Run the foundational stateful agent
 python -m agents.agent_v07_the_secure_learner.agent_v07
+```
+
+### Managing Models
+
+This project uses a centralized model management system. You can discover available models and update their assignments using the provided admin script.
+
+```bash
+# Discover all available models from the Venice API
+python manage_models.py --discover
+
+# View the current model-to-role assignments
+python manage_models.py --status
+
+# Interactively update a model assignment
+python manage_models.py --update
 ```
 
 ### Managing Memories
 
 Use the CLI tool to view, add, or delete memories for any persona.
-bash
 
 ```bash
 python persona_admin.py
 ```
+
 ## Usage
 
 ### The Agent Evolution
 
-#### The Modern Architecture (`v07` & `v08`)
-The culmination of the project, featuring a production-ready, multi-agent system.
+#### The Modern Architecture (`v07` - `v10`)
 
-##### `agent_v08_the_keeper_of_eldoria` (Showcase)
+The culmination of the project, featuring a production-ready, multi-agent system with a robust, scalable architecture.
+
+##### `agent_v10_the_tool_first_agent` (Stateless Standard)
+The new standard for building reliable, stateless agents. It implements a "Classify -> Execute -> Synthesize" workflow that removes the LLM from the critical path of tool selection, dramatically improving reliability for task-oriented interactions.
+
+##### `agent_v09_the_code_analyst` (Stateless Specialist)
+A stateless agent designed to analyze codebases. It served as the proof-of-concept for the "Tool-First" architecture, demonstrating its effectiveness in a real-world domain.
+
+##### `agent_v08_the_keeper_of_eldoria` (Creative Showcase)
 A world-building and lore management assistant for a TTRPG campaign, demonstrating the framework's versatility:
 - **Intelligence:** Recalls world lore and the user's preferences for contextually relevant brainstorming.
 - **Specialization:** Uses a custom `BrainstormTool` for creative generation.
 - **Security:** Reads user data but only writes to its own world lore, respecting the ACL system.
 
-##### `agent_v07_the_secure_learner` (The Foundation)
-The most significant architectural leap. This is the stable, intelligent platform for the entire modern system:
+##### `agent_v07_the_secure_learner` (Stateful Foundation)
+The most significant architectural leap for stateful agents. This is the stable, intelligent platform for the entire modern system:
 - **Identity-Based:** Entire persona is defined by a `config.json` file.
 - **Secure:** Enforces memory access via a strict persona-based ACL system.
-- **Intelligent Memory:** Features a `MemoryManager` that resolves knowledge conflicts and deduplicates facts without impacting conversation speed.
+- **Intelligent Memory:** Features a `MemoryManager` that resolves knowledge conflicts and deduplicates facts.
 
 #### The Historical Evolution (`v01` - `v06`)
+
 These early versions document the iterative process of building the core components.
 
 ##### `agent_v06_the_learner`
@@ -100,11 +123,17 @@ A step up in conversational ability, maintaining a basic turn-by-turn dialogue.
 The humble beginning. A single-file, stateless agent that responds to a prompt.
 
 ### Core Tools
+
 | Tool | Purpose |
 | :--- | :--- |
-| **`orchestrator.py`** | The cognitive engine. Manages the "Recall -> Plan -> Execute -> Memorize" workflow. |
+| **`model_manager.py`** | The central abstraction for model selection, providing a role-based API to agents. |
+| **`model_discovery_tool.py`** | Fetches live model metadata from the Venice API, with caching for performance. |
+| **`tool_first_orchestrator.py`** | The new, reliable orchestration engine for stateless, task-oriented agents. |
+| **`orchestrator.py`** | The original cognitive engine for stateful agents. Manages the "Recall -> Plan -> Execute -> Memorize" workflow. |
 | **`memory_manager.py`** | The intelligent memory layer. Uses an LLM to resolve knowledge conflicts. |
 | **`knowledge_base.py`** | The secure, persistent storage layer with ACL enforcement. |
+| **`file_system_tool.py`** | The primary interface for agents to securely interact with the local file system. |
+| **`intent_classifier.py`** | A deterministic, high-speed classifier that maps user intent to a tool. |
 | **`brainstorm_tool.py`** | A generative tool for creative tasks, used by `agent_v08`. |
 
 ## Contributing
