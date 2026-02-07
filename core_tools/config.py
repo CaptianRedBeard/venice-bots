@@ -1,4 +1,5 @@
 import os
+import json
 from pathlib import Path
 
 try:
@@ -58,3 +59,23 @@ def get_venice_parameters():
         "enable_web_search": os.getenv("VENICE_ENABLE_WEB_SEARCH", "off"),
         "enable_web_citations": os.getenv("VENICE_ENABLE_WEB_CITATIONS", "false").lower() == "true",
     }
+
+def get_model_for_role(role: str) -> str:
+    """
+    Retrieves the model name for a given role from the models.json configuration.
+    """
+    config_path = PROJECT_ROOT / "config" / "models.json"
+    try:
+        with open(config_path, 'r', encoding='utf-8') as f:
+            models_config = json.load(f)
+        
+        role_config = models_config.get("model_roles", {}).get(role)
+        if not role_config:
+            # Fallback to a default if role is not found
+            print(f"Warning: Model role '{role}' not found in config. Falling back to 'llama-3.2-3b'.")
+            return "llama-3.2-3b"
+        
+        return role_config.get("model", "llama-3.2-3b")
+    except (FileNotFoundError, json.JSONDecodeError) as e:
+        print(f"Error loading models config: {e}. Falling back to 'llama-3.2-3b'.")
+        return "llama-3.2-3b"

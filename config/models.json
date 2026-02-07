@@ -5,7 +5,7 @@
       "required_capabilities": ["text"]
     },
     "synthesis": {
-      "model": "llama-3.2-3b",
+      "model": "llama-3.3-70b",
       "required_capabilities": ["text"]
     },
     "code": {
@@ -15,6 +15,10 @@
     "vision": {
       "model": "qwen3-vl-235b-a22b",
       "required_capabilities": ["text", "vision"]
+    },
+    "function_calling": {
+      "model": "zai-org-glm-4.7",
+      "required_capabilities": ["text"]
     }
   },
   "model_profiles": {},

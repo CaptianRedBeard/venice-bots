@@ -1,82 +1,86 @@
+import importlib
+import inspect
+from pathlib import Path
+from typing import Dict, Any, Callable, List
+
 class ToolRegistry:
+    """
+    A central registry for all tools available to agents.
+    This version supports self-describing tools with schemas, init hooks,
+    and manages both standalone functions and methods on class instances.
+    """
     def __init__(self):
-        self.tools = {}
-    
-    def register_tool(self, func):
-        """Register a tool function in the registry.
+        self.tools: Dict[str, Dict[str, Any]] = {}
+
+    def register(self, tool_name: str, tool_callable: Callable, schema: Dict[str, Any] = None, init_hook: Callable = None):
+        """
+        Registers a tool with a given name, its callable, an optional schema, and an optional init hook.
         
         Args:
-            func: A callable function with a descriptive docstring
+            tool_name (str): The unique name for the tool.
+            tool_callable (Callable): The function or method to call.
+            schema (Dict[str, Any]): A JSON schema describing the tool's arguments.
+            init_hook (Callable): An optional function to run before the main tool to prepare arguments.
         """
-        if not callable(func):
-            raise ValueError("Tool must be callable")
+        if tool_name in self.tools:
+            print(f"Warning: Tool '{tool_name}' is being overwritten.")
         
-        if not func.__doc__:
-            raise ValueError(f"Tool {func.__name__} must have a docstring")
-        
-        tool_name = func.__name__
         self.tools[tool_name] = {
-            'function': func,
-            'name': tool_name,
-            'description': func.__doc__.strip()
+            "callable": tool_callable,
+            "schema": schema or {},
+            "init_hook": init_hook
         }
-    
-    def get_tools_for_prompt(self):
-        """Format all registered tools into a string for the AI prompt.
-        
-        Returns:
-            str: Formatted list of available tools
+        print(f"✓ Registered tool: {tool_name}")
+
+    def get(self, tool_name: str) -> Callable:
+        """Retrieves a tool's callable by name."""
+        tool_info = self.tools.get(tool_name)
+        if not tool_info:
+            raise ValueError(f"Tool '{tool_name}' not found in registry.")
+        return tool_info["callable"]
+
+    def get_schema(self, tool_name: str) -> Dict[str, Any]:
+        """Retrieves a tool's schema by name."""
+        tool_info = self.tools.get(tool_name)
+        if not tool_info:
+            raise ValueError(f"Tool '{tool_name}' not found in registry.")
+        return tool_info["schema"]
+
+    def get_all_schemas(self) -> List[Dict[str, Any]]:
         """
-        if not self.tools:
-            return "No tools available."
-        
-        tool_list = []
-        for tool_name, tool_info in self.tools.items():
-            func = tool_info['function']
-            # Get function signature for argument display
-            import inspect
-            sig = inspect.signature(func)
-            params = list(sig.parameters.keys())
-            
-            if params:
-                tool_list.append(f"- {tool_name}({', '.join(params)}): {tool_info['description']}")
-            else:
-                tool_list.append(f"- {tool_name}(): {tool_info['description']}")
-        
-        return "\n".join(tool_list)
-    
-    def get_tool(self, name):
-        """Get a tool function by name.
-        
-        Args:
-            name (str): Name of the tool to retrieve
-            
-        Returns:
-            callable: The tool function
-            
-        Raises:
-            ValueError: If tool is not found
+        Returns a list of all registered tool schemas, formatted for LLM consumption.
+        Each schema is a dictionary containing the tool's name and its parameters.
         """
-        if name not in self.tools:
-            raise ValueError(f"Tool '{name}' not found. Available tools: {list(self.tools.keys())}")
-        
-        return self.tools[name]['function']
-    
-    def call_tool(self, name, **kwargs):
-        """Call a tool by name with provided arguments.
-        
-        Args:
-            name (str): Name of the tool to call
-            **kwargs: Arguments to pass to the tool
-            
-        Returns:
-            Result of the tool function call
-            
-        Raises:
-            ValueError: If tool is not found or call fails
+        formatted_schemas = []
+        for name, info in self.tools.items():
+            if info["schema"]: # Only include tools that have a schema
+                formatted_schemas.append({
+                    "name": name,
+                    "description": info["schema"].get("description", "No description available."),
+                    "parameters": info["schema"].get("parameters", {})
+                })
+        return formatted_schemas
+
+    def call(self, tool_name: str, **kwargs) -> Any:
         """
+        Executes a tool by name with the given arguments.
+        Runs an init_hook first if one is registered.
+        """
+        tool_info = self.tools.get(tool_name)
+        if not tool_info:
+            raise ValueError(f"Tool '{tool_name}' not found in registry.")
+
+        # Run the init_hook if it exists to prepare/modify the arguments
+        init_hook = tool_info.get("init_hook")
+        if init_hook:
+            kwargs = init_hook(**kwargs)
+
+        tool_callable = tool_info["callable"]
         try:
-            tool_func = self.get_tool(name)
-            return tool_func(**kwargs)
-        except Exception as e:
-            raise ValueError(f"Error calling tool '{name}': {str(e)}")
+            return tool_callable(**kwargs)
+        except TypeError as e:
+            raise ValueError(f"Error calling tool '{tool_name}': {e}")
+
+    def list_tools(self) -> List[str]:
+        """Returns a list of all registered tool names."""
+        return list(self.tools.keys())

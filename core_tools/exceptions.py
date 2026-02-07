@@ -11,3 +11,7 @@ class ModelIsBetaError(Exception):
 class ModelDiscoveryError(Exception):
     """Custom exception for errors during model discovery."""
     pass
+
+class ToolError(Exception):
+    """Custom exception for errors raised by core tools."""
+    pass

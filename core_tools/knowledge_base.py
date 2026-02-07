@@ -15,6 +15,18 @@ class KnowledgeBase:
         
         # Load configuration
         self.config = self._load_config()
+
+    def _resolve_path(self, relative_path: str) -> Path:
+        """
+        Resolves a relative path against the persona's data directory.
+        
+        Args:
+            relative_path (str): The relative path (e.g., "user/daily/file.md").
+            
+        Returns:
+            Path: The absolute path within the persona's directory.
+        """
+        return self.data_dir / relative_path
     
     def _load_config(self):
         """Load persona configuration."""

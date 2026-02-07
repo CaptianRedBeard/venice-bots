@@ -1,143 +1,126 @@
-import re
 import json
-from .intent_classifier import IntentClassifier
 from .tool_registry import ToolRegistry
-from .config import get_venice_client
+from .config import get_venice_client, get_model_for_role
+from .exceptions import ToolError
 
 class ToolFirstOrchestrator:
     """
-    An orchestrator that implements a "Tool Execution -> LLM Synthesis" workflow.
-    This is designed to be more reliable than LLM-based planning.
+    Orchestrates the "Tool Execution -> LLM Synthesis" workflow.
+    This version is generic and includes dynamic header discovery.
     """
-    def __init__(self, tool_registry: ToolRegistry, llm_client):
-        """
-        Initializes the ToolFirstOrchestrator.
-        
-        Args:
-            tool_registry (ToolRegistry): An instance of the tool registry.
-            llm_client: An instance of the Venice LLM client.
-        """
+    def __init__(self, tool_registry: ToolRegistry, llm_client, llm_function_caller):
+        """ Initializes the ToolFirstOrchestrator. """
         if not isinstance(tool_registry, ToolRegistry):
             raise TypeError("tool_registry must be an instance of ToolRegistry.")
         self.tool_registry = tool_registry
         self.llm_client = llm_client
-        self.classifier = IntentClassifier()
-
-    def _execute_tool(self, tool_name: str, user_input: str):
-        """
-        Executes a tool with sensible defaults based on the user input.
-        
-        Args:
-            tool_name (str): The name of the tool to execute.
-            user_input (str): The original user input to parse for arguments.
-            
-        Returns:
-            The raw result from the tool, or an error string.
-        """
-        try:
-            if tool_name == "find_files":
-                # Try to find a quoted pattern first
-                pattern_match = re.search(r"['\"]([^'\"]+)['\"]", user_input)
-                if pattern_match:
-                    pattern = pattern_match.group(1)
-                else:
-                    # Fallback: find the word after "find" or "named"
-                    match = re.search(r"(?:find|named)\s+(\S+)", user_input, re.IGNORECASE)
-                    pattern = match.group(1) if match else "*"
-                return self.tool_registry.call_tool("find_files", pattern=pattern, root_path=".")
-            
-            elif tool_name == "read_file":
-                # Try to find a quoted path first
-                path_match = re.search(r"['\"]([^'\"]+)['\"]", user_input)
-                if path_match:
-                    path = path_match.group(1)
-                else:
-                    # Fallback: find the word after "read" or "file"
-                    match = re.search(r"(?:read|file)\s+(\S+)", user_input, re.IGNORECASE)
-                    if match:
-                        path = match.group(1)
-                    else:
-                        return "Error: Please specify a file path."
-                
-                return self.tool_registry.call_tool("read_file", path=path)
-
-            elif tool_name == "list_directory":
-                # Try to find a quoted path first
-                path_match = re.search(r"['\"]([^'\"]+)['\"]", user_input)
-                if path_match:
-                    path = path_match.group(1)
-                else:
-                    # Fallback: find the word after "in"
-                    match = re.search(r"in\s+(\S+)", user_input, re.IGNORECASE)
-                    path = match.group(1) if match else "."
-                
-                return self.tool_registry.call_tool("list_directory", path=path)
-            
-            else:
-                return f"Error: Unknown tool '{tool_name}' selected for execution."
-
-        except Exception as e:
-            return f"Error during tool execution: {e}"
+        self.function_caller = llm_function_caller
 
     def _synthesize_response(self, tool_output: any, persona_config: dict) -> str:
-        """
-        Uses an LLM to synthesize the raw tool output into a user-friendly response.
-        
-        Args:
-            tool_output (any): The raw output from the executed tool.
-            persona_config (dict): The persona configuration to use for the response.
-            
-        Returns:
-            A formatted, user-friendly string from the LLM.
-        """
+        """Uses an LLM to synthesize the raw tool output into a user-friendly response."""
         system_prompt = persona_config.get('system_prompt', "You are a helpful assistant.")
+        synthesis_prompt = f"""Summarize the following data for the user based on your persona. Do not add information that is not present in the data. If the data is an error message, report it clearly.
         
-        # A simple, direct prompt for synthesis
-        synthesis_prompt = f"""You are a helpful assistant. Your task is to summarize the following data for the user based on your persona. Do not add information that is not present in the data. If the data is an error message, report the error clearly and concisely.
-
-Data:
-{json.dumps(tool_output, indent=2)}
-
-Summary:"""
+        Data: {json.dumps(tool_output, indent=2)}
+        
+        Summary:"""
         
         try:
-            # Use the model specified in the persona config, with a fallback
-            model = persona_config.get('models', {}).get('synthesis', 'llama-3.2-3b')
+            model = get_model_for_role('synthesis')
             response = self.llm_client.chat.completions.create(
                 model=model,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": synthesis_prompt}
-                ],
+                messages=[{"role": "system", "content": system_prompt}, {"role": "user", "content": synthesis_prompt}],
                 temperature=0.3
             )
             return response.choices[0].message.content.strip()
         except Exception as e:
-            # Fallback to a non-LLM response if LLM synthesis fails
             return f"I was able to execute the tool, but I had trouble formatting the response. Here is the raw data:\n{tool_output}"
 
     def run(self, user_input: str, persona_config: dict) -> str:
-        """
-        Runs the full "Tool-First" workflow: Classify, Execute, Synthesize.
-        
-        Args:
-            user_input (str): The input string from the user.
-            persona_config (dict): The configuration for the agent's persona.
+        """Runs the enhanced workflow with smart features."""
+        try:
+            # 1. Check for summarization prompt
+            if len(user_input) > 300:
+                model = get_model_for_role('synthesis')
+                response = self.llm_client.chat.completions.create(
+                    model=model,
+                    messages=[
+                        {"role": "system", "content": "You are a helpful assistant. Respond only with 'yes' or 'no'."},
+                        {"role": "user", "content": f"The user wants to add this note to their journal: '{user_input}'. Should I ask if they want to summarize it because it's long?"}
+                    ],
+                    temperature=0.1
+                )
+                if response.choices[0].message.content.strip().lower() == 'yes':
+                    return "That's a long note. Should I log it as-is, or summarize it for you? (Reply with 'summarize' or 'log as-is')"
+
+            # 2. Pre-emptively determine file_type and target_date for potential append operations
+            file_type = 'daily'
+            target_date = None
+            # Use a lightweight LLM call to see if the user is asking to append and to what file
+            intent_prompt = f"""
+            Analyze the user's request: "{user_input}"
+            Does the user want to add or log something? If so, determine if it's for a 'daily' or 'weekly' file and extract any date.
+            If they are not asking to add or log, set file_type to 'none'.
+            Respond ONLY with a JSON object: {{"file_type": "daily|weekly|none", "target_date": "YYYY-MM-DD|string|null"}}
+            """
+            model = get_model_for_role('reasoning')
+            response = self.llm_client.chat.completions.create(
+                model=model, messages=[{"role": "user", "content": intent_prompt}], temperature=0.1
+            )
+            intent_result = json.loads(response.choices[0].message.content.strip())
+            file_type = intent_result.get('file_type', 'daily')
+            target_date = intent_result.get('target_date')
+
+            # 3. Get headers if we think this is an append operation
+            available_headers = []
+            if file_type in ['daily', 'weekly']:
+                try:
+                    available_headers = self.tool_registry.call("get_headers", file_type=file_type, target_date_str=target_date)
+                except ToolError:
+                    # If the file doesn't exist or can't be read, we'll proceed without headers
+                    pass
+
+            # 4. Parse intent and arguments with the available headers
+            all_schemas = self.tool_registry.get_all_schemas()
+            tool_name, args = self.function_caller.parse(user_input, all_schemas, available_headers=available_headers)
+
+            # 5. Handle user choice for summarization
+            if tool_name == "unknown" and user_input.lower() in ["summarize", "log as-is"]:
+                if not hasattr(self, '_pending_long_text'):
+                    return "I don't have a previous long text to summarize or log. Please provide it again."
+                
+                if user_input.lower() == "summarize":
+                    summarizer_tool = self.tool_registry.get("summarize")
+                    summary = summarizer_tool.summarize(text_to_summarize=self._pending_long_text)
+                    tool_name, args = self.function_caller.parse(f"Add '{summary}' to my journal.", all_schemas)
+                    del self._pending_long_text
+                elif user_input.lower() == "log as-is":
+                    tool_name, args = self.function_caller.parse(self._pending_long_text, all_schemas)
+                    del self._pending_long_text
+
+            if tool_name == "unknown":
+                persona_desc = persona_config.get('description', 'a helpful assistant')
+                return f"I'm not sure how to handle that request. I am {persona_desc}."
+
+            # 6. Store pending text if it's a long append request
+            if len(user_input) > 300 and tool_name == "append_to_section":
+                self._pending_long_text = user_input
+
+            # 7. Execute the tool
+            # If we determined a specific file_type/date, add it to the args for the init_hook
+            if file_type in ['daily', 'weekly']:
+                args['file_type'] = file_type
+                if target_date:
+                    args['target_date'] = target_date
             
-        Returns:
-            The final, synthesized response for the user.
-        """
-        # 1. Classify
-        tool_name = self.classifier.classify(user_input)
-        
-        if tool_name == "unknown":
-            persona_desc = persona_config.get('description', 'a helpful assistant')
-            return f"I'm not sure how to handle that request. I am {persona_desc} and can help you find files, read file contents, or list directories."
+            tool_output = self.tool_registry.call(tool_name, **args)
 
-        # 2. Execute
-        tool_output = self._execute_tool(tool_name, user_input)
+            # 8. Synthesize the response
+            final_response = self._synthesize_response(tool_output, persona_config)
+            return final_response
 
-        # 3. Synthesize
-        final_response = self._synthesize_response(tool_output, persona_config)
+        except Exception as e:
+            error_message = f"An error occurred during processing: {e}"
+            return self._synthesize_response(error_message, persona_config)
         
-        return final_response
+        

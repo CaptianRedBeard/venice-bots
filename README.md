@@ -24,30 +24,33 @@ The architecture is built on **separation of concerns**. We've separated an agen
 
 ### Installation
 
-1. **Clone the Repository**
-   ```bash
-   git clone https://github.com/CaptianRedBeard/venice-bots.git
-   cd venice-bots
-   ```
+1.  **Clone the Repository**
+    ```bash
+    git clone https://github.com/CaptianRedBeard/venice-bots.git
+    cd venice-bots
+    ```
 
-2. **Set Up Environment**
-   ```bash
-   python -m venv .venv
-   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-   pip install python-dotenv openai
-   ```
+2.  **Set Up Environment**
+    ```bash
+    python -m venv .venv
+    source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+    pip install python-dotenv openai
+    ```
 
-3. **Configure API Key & Models**
-   - Create a `.env` file in the project root.
-   - Add your Venice.ai API key: `VENICE_API_KEY=your_api_key_here`
-   - (Optional) Review default model roles in `config/models.json`.
+3.  **Configure API Key & Models**
+    - Create a `.env` file in the project root.
+    - Add your Venice.ai API key: `VENICE_API_KEY=your_api_key_here`
+    - (Optional) Review default model roles in `config/models.json`.
 
 ### Running an Agent
 
-The `agent_v10` showcase is the recommended starting point for our modern, stateless architecture.
+The `agent_v11` showcase is the recommended starting point for our modern, stable architecture.
 
 ```bash
-# Run the new standard for stateless agents
+# Run the new stable personal journaling agent
+python -m agents.agent_v11_the_captains_log.agent_v11
+
+# Run the stateless agent that pioneered the tool-first architecture
 python -m agents.agent_v10_the_tool_first_agent.agent_v10
 
 # Run the foundational stateful agent
@@ -81,9 +84,15 @@ python persona_admin.py
 
 ### The Agent Evolution
 
-#### The Modern Architecture (`v07` - `v10`)
+#### The Modern Architecture (`v07` - `v11`)
 
 The culmination of the project, featuring a production-ready, multi-agent system with a robust, scalable architecture.
+
+##### `agent_v11_the_captains_log` (Stable Proof-of-Concept)
+A powerful personal journaling agent that serves as the stable baseline for the project's new architecture. It demonstrates a robust tool system and a simple, reliable orchestration flow.
+- **Reliability:** Features a simplified orchestration logic that prioritizes stability.
+- **Intelligence:** Uses an LLM to dynamically discover headers in the journal template and select the correct section for notes.
+- **Extensibility:** Built on a new, self-describing tool registry that makes the system easy to extend.
 
 ##### `agent_v10_the_tool_first_agent` (Stateless Standard)
 The new standard for building reliable, stateless agents. It implements a "Classify -> Execute -> Synthesize" workflow that removes the LLM from the critical path of tool selection, dramatically improving reliability for task-oriented interactions.
@@ -128,12 +137,14 @@ The humble beginning. A single-file, stateless agent that responds to a prompt.
 | :--- | :--- |
 | **`model_manager.py`** | The central abstraction for model selection, providing a role-based API to agents. |
 | **`model_discovery_tool.py`** | Fetches live model metadata from the Venice API, with caching for performance. |
-| **`tool_first_orchestrator.py`** | The new, reliable orchestration engine for stateless, task-oriented agents. |
+| **`llm_function_caller.py`** | A stateless "brain" that uses an LLM to parse natural language into structured tool calls. |
+| **`tool_registry.py`** | A dynamic registry for self-describing tools, making the system modular and extensible. |
+| **`journal_manager_tool.py`** | A robust tool for handling all file I/O, templating, and date parsing for journaling agents. |
+| **`summarizer_tool.py`** | A reusable tool for summarizing long blocks of text into concise bullet points. |
 | **`orchestrator.py`** | The original cognitive engine for stateful agents. Manages the "Recall -> Plan -> Execute -> Memorize" workflow. |
 | **`memory_manager.py`** | The intelligent memory layer. Uses an LLM to resolve knowledge conflicts. |
 | **`knowledge_base.py`** | The secure, persistent storage layer with ACL enforcement. |
 | **`file_system_tool.py`** | The primary interface for agents to securely interact with the local file system. |
-| **`intent_classifier.py`** | A deterministic, high-speed classifier that maps user intent to a tool. |
 | **`brainstorm_tool.py`** | A generative tool for creative tasks, used by `agent_v08`. |
 
 ## Contributing
