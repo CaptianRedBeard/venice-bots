@@ -1,0 +1,18 @@
+name: Research and Log Workflow
+description: A simple workflow to research a topic using one agent and then log the result using another.
+steps:
+  - id: step_1
+    type: agent
+    agent: researcher_agent
+    prompt: "Research the following topic and provide a concise summary: {input}"
+  - id: step_2
+    type: agent
+    agent: journaler_agent
+    # --- FIX: Make the command explicit and include the target path ---
+    prompt: "Take the following research summary, format it as a daily log entry, and save it to the file 'logs/daily.md': {output}"
+  - id: step_3
+    type: tool
+    name: file_writer
+    # This step is conceptual for this sprint.
+    # The Conductor will log the attempt but not execute a real tool.
+    prompt: "The final log entry is: {output}"

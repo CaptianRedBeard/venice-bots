@@ -1,156 +1,112 @@
-# Venice Bots
+# Venice Bots: A Multi-Agent AI Framework
 
-An architectural showcase detailing the evolution of AI agents from a simple stateless responder to a sophisticated, secure, and intelligent multi-agent system. This project documents the step-by-step construction of a powerful cognitive framework. Each agent version represents a major conceptual leap, building on the stable foundation of its predecessor.
+This project is a continuously evolving framework for building, orchestrating, and managing specialized AI agents. It began as a series of prototypes to explore different architectural patterns and has now matured into "Project Symphony," a robust, decoupled system designed for scalability and maintainability.
 
-## Motivation
+## Project History and Evolution
 
-This project explores the practical mechanics of how multiple AI agents can work together within a modular, scalable architecture. The primary goals are:
+This project's development can be understood in distinct phases, each addressing the limitations of the last.
 
-- **Understanding**: To deeply understand how agents, tools, memory systems, and orchestration layers interact in a production-like environment.
-- **Iterative Development**: To demonstrate how complex systems evolve through incremental improvements, with each version building upon the stable foundation of its predecessor.
-- **Practical Implementation**: To create reusable components that separate concerns between conversation, memory, tool use, and planning, enabling rapid prototyping of specialized agents.
 
-The architecture is built on **separation of concerns**. We've separated an agent's "personality" from its "thinking" and its "tools":
+### Phase 1: The Prototype Era (v1 - v11)
+The initial versions were focused on proving the core concepts of agentic AI. This era saw the development of individual agents with increasingly complex internal orchestration, from simple tool-users to secure learners. These agents were invaluable for learning but were ultimately tightly coupled and not designed for a multi-agent system. **They are now considered legacy artifacts and are superseded by the v2.0.0 Symphony framework.**
 
-- **Persona System:** Defines an agent's identity, memory, security permissions (ACLs), and behavior via simple `config.json` files.
-- **Cognitive Engine (`core_tools/`):** A pluggable set of tools for memory, orchestration, and creative tasks. Agents are thin shells that wire these components together.
+-   **Agent v08:** A showcase agent demonstrating the initial "Tool-First" architecture.
+-   **Agent v09:** A specialized code analyst with granular error handling.
+-   **Agent v11:** The "Captains Log," a stable journaling agent that served as the final prototype and baseline for the next phase.
+
+### Phase 2: The Architectural Pivot ("Operation Clean Slate")
+With the lessons from the prototypes, we undertook a major refactoring to establish a "Tool-First" architecture. This involved creating self-describing tools and a more modular agent design, which solidified v11 as a stable, working baseline.
+
+### Phase 3: The Framework Era (v2.0.0 - Project Symphony)
+The prototype era revealed that a collection of individual agents was not enough. We needed a system to compose them. This led to a complete architectural overhaul to build a decoupled, scalable framework. The legacy systems were sunsetted in favor of a new, powerful core.
+
+## Introducing Project Symphony (v2.0.0)
+
+Symphony is the new core of the framework. It is a decoupled architecture built on a central "Conductor" that orchestrates "Doer" agents and "Standardized" tools. This design solves the scalability and maintainability issues of the prototype era and provides a clean foundation for rapid development.
+
+### The Philosophy: Separation of Concerns
+
+-   **Agents are Doers:** An agent's only job is to use the tools it's given to accomplish a task. It is a pure, stateless executor.
+-   **The Conductor is the Brain:** The Conductor is the central orchestrator. It reads a workflow, discovers the right agents and tools, and injects them with the necessary context to execute the plan.
+-   **Tools are Standardized:** All tools inherit from a `SymphonyTool` base class, ensuring they can be seamlessly integrated and managed by the Conductor.
+
+## Prerequisites
+
+- Python 3.8 or higher
+- A Venice AI API key
 
 ## Quick Start
 
-### Prerequisites
+### 1. Initialize the Project
 
-- Python 3.8+
-- A Venice.ai API key
-
-### Installation
-
-1.  **Clone the Repository**
-    ```bash
-    git clone https://github.com/CaptianRedBeard/venice-bots.git
-    cd venice-bots
-    ```
-
-2.  **Set Up Environment**
-    ```bash
-    python -m venv .venv
-    source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-    pip install python-dotenv openai
-    ```
-
-3.  **Configure API Key & Models**
-    - Create a `.env` file in the project root.
-    - Add your Venice.ai API key: `VENICE_API_KEY=your_api_key_here`
-    - (Optional) Review default model roles in `config/models.json`.
-
-### Running an Agent
-
-The `agent_v11` showcase is the recommended starting point for our modern, stable architecture.
+First, run the setup script to create the necessary directory structure and configuration files.
 
 ```bash
-# Run the new stable personal journaling agent
-python -m agents.agent_v11_the_captains_log.agent_v11
-
-# Run the stateless agent that pioneered the tool-first architecture
-python -m agents.agent_v10_the_tool_first_agent.agent_v10
-
-# Run the foundational stateful agent
-python -m agents.agent_v07_the_secure_learner.agent_v07
+python setup.py
 ```
+Follow the on-screen instructions to set up your .env file with your Venice API key.
 
-### Managing Models
-
-This project uses a centralized model management system. You can discover available models and update their assignments using the provided admin script.
+### 2. Run a Workflow
+The framework comes with a pre-built workflow to demonstrate its capabilities. You can run it using the run_symphony.py script.
 
 ```bash
-# Discover all available models from the Venice API
-python manage_models.py --discover
+# Run the default research and logging workflow
+python run_symphony.py research_and_log
 
-# View the current model-to-role assignments
-python manage_models.py --status
-
-# Interactively update a model assignment
-python manage_models.py --update
+# See a list of all available workflows
+python run_symphony.py
 ```
+### 3. Check the Logs
 
-### Managing Memories
-
-Use the CLI tool to view, add, or delete memories for any persona.
+Symphony uses clean, file-based logging. You can find the structured JSON logs for each component in the logs/ directory.
 
 ```bash
-python persona_admin.py
+# View the log for the agent
+tail -f logs/agent_v12_the_shell.log
 ```
 
-## Usage
+### **Architecture Overview**
 
-### The Agent Evolution
+```markdown
+## Architecture
 
-#### The Modern Architecture (`v07` - `v11`)
+### The Core (`symphony/`)
 
-The culmination of the project, featuring a production-ready, multi-agent system with a robust, scalable architecture.
+The `symphony/` package is the heart of the framework.
 
-##### `agent_v11_the_captains_log` (Stable Proof-of-Concept)
-A powerful personal journaling agent that serves as the stable baseline for the project's new architecture. It demonstrates a robust tool system and a simple, reliable orchestration flow.
-- **Reliability:** Features a simplified orchestration logic that prioritizes stability.
-- **Intelligence:** Uses an LLM to dynamically discover headers in the journal template and select the correct section for notes.
-- **Extensibility:** Built on a new, self-describing tool registry that makes the system easy to extend.
+-   **`conductor.py`**: The central orchestrator that executes workflows.
+-   **`agent_shell.py`**: The base class for all v12 agents.
+-   **`agent_registry.py`**: Discovers and manages agent personas.
+-   **`tool_registry.py`**: Discovers and manages tool classes.
+-   **`tool.py`**: Defines the `SymphonyTool` base class.
 
-##### `agent_v10_the_tool_first_agent` (Stateless Standard)
-The new standard for building reliable, stateless agents. It implements a "Classify -> Execute -> Synthesize" workflow that removes the LLM from the critical path of tool selection, dramatically improving reliability for task-oriented interactions.
+### Components
 
-##### `agent_v09_the_code_analyst` (Stateless Specialist)
-A stateless agent designed to analyze codebases. It served as the proof-of-concept for the "Tool-First" architecture, demonstrating its effectiveness in a real-world domain.
+-   **Agents (`agents/`)**: This directory contains all available agents. Each agent is a "doer" with its own persona configuration. The `agent_v12_the_shell` is the foundational agent.
+-   **Tools (`symphony_tools/`)**: This directory contains all tools built on the Symphony standard, such as the `simple_file_system_tool` and `summarizer_tool`.
+-   **Workflows (`workflows/`)**: This directory contains YAML files that define multi-step workflows, like `research_and_log.yaml`.
+```
 
-##### `agent_v08_the_keeper_of_eldoria` (Creative Showcase)
-A world-building and lore management assistant for a TTRPG campaign, demonstrating the framework's versatility:
-- **Intelligence:** Recalls world lore and the user's preferences for contextually relevant brainstorming.
-- **Specialization:** Uses a custom `BrainstormTool` for creative generation.
-- **Security:** Reads user data but only writes to its own world lore, respecting the ACL system.
+## Developer Guide
 
-##### `agent_v07_the_secure_learner` (Stateful Foundation)
-The most significant architectural leap for stateful agents. This is the stable, intelligent platform for the entire modern system:
-- **Identity-Based:** Entire persona is defined by a `config.json` file.
-- **Secure:** Enforces memory access via a strict persona-based ACL system.
-- **Intelligent Memory:** Features a `MemoryManager` that resolves knowledge conflicts and deduplicates facts.
+### Creating a New Tool
 
-#### The Historical Evolution (`v01` - `v06`)
+1.  Create a new file in `symphony_tools/` (e.g., `my_tool.py`).
+2.  Inherit from the `SymphonyTool` base class.
+3.  Implement the required methods (`.name`, `.description`, `.run()`, etc.).
+4.  The `ToolRegistry` will automatically discover it.
 
-These early versions document the iterative process of building the core components.
+### Creating a New Agent
 
-##### `agent_v06_the_learner`
-Introduced persistent memory, allowing an agent to learn and recall facts across conversations.
+1.  Create a new directory in `agents/` (e.g., `my_agent/`).
+2.  Create a `config.json` defining its persona and default tools.
+3.  Create your agent's Python script, inheriting from `AgentShell`.
+4.  Run `python setup.py` to register it.
 
-##### `agent_v05_simple_orchestrator`
-Introduced the "separation of concerns" pattern, delegating planning and execution to the `SimpleOrchestrator` tool.
+### Defining a Workflow
 
-##### `agent_v04_tool_user`
-The first agent to use external tools, demonstrating how an agent can extend its capabilities.
+Create a new `.yaml` file in the `workflows/` directory. See `research_and_log.yaml` for an example of how to define a sequence of steps.
 
-##### `agent_v03_conversationalist`
-A step up in conversational ability, maintaining a basic turn-by-turn dialogue.
+## Project Status
 
-##### `agent_v01_simple_responder`
-The humble beginning. A single-file, stateless agent that responds to a prompt.
-
-### Core Tools
-
-| Tool | Purpose |
-| :--- | :--- |
-| **`model_manager.py`** | The central abstraction for model selection, providing a role-based API to agents. |
-| **`model_discovery_tool.py`** | Fetches live model metadata from the Venice API, with caching for performance. |
-| **`llm_function_caller.py`** | A stateless "brain" that uses an LLM to parse natural language into structured tool calls. |
-| **`tool_registry.py`** | A dynamic registry for self-describing tools, making the system modular and extensible. |
-| **`journal_manager_tool.py`** | A robust tool for handling all file I/O, templating, and date parsing for journaling agents. |
-| **`summarizer_tool.py`** | A reusable tool for summarizing long blocks of text into concise bullet points. |
-| **`orchestrator.py`** | The original cognitive engine for stateful agents. Manages the "Recall -> Plan -> Execute -> Memorize" workflow. |
-| **`memory_manager.py`** | The intelligent memory layer. Uses an LLM to resolve knowledge conflicts. |
-| **`knowledge_base.py`** | The secure, persistent storage layer with ACL enforcement. |
-| **`file_system_tool.py`** | The primary interface for agents to securely interact with the local file system. |
-| **`brainstorm_tool.py`** | A generative tool for creative tasks, used by `agent_v08`. |
-
-## Contributing
-
-We are open to suggestions, feedback, and collaboration as we work out the basic tools and architecture. Since the project is in active development, the core APIs and structures are subject to change. Feel free to open issues or discussions with ideas, but please note that major feature integration may be deferred until the foundational components are solidified.
-
-## License
-
-This project is open-sourced under the MIT License.
+This is the v2.0.0 release of Project Symphony. The core architecture is stable and ready for development. The next phases will focus on expanding the library of agents and tools.

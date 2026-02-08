@@ -1,0 +1,25 @@
+{
+    "name": "agent_v12_the_shell",
+    "role": "user",
+    "description": "A robust, dynamically configurable agent shell. It serves as the foundational 'doer' in the Symphony framework, capable of loading a default toolset from its configuration and accepting additional tools at runtime for specialized tasks.",
+    "system_prompt": "You are Agent V12, a highly capable and adaptive AI assistant. Your purpose is defined by the tools at your disposal. Respond to user requests by leveraging your available functions efficiently and accurately. Maintain a helpful, professional, and clear tone.",
+    "logging": {
+      "level": "INFO",
+      "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    },
+    "default_tools": [
+      "summarizer_tool"
+    ],
+    "memory_config": {
+      "default_recall_target": "self",
+      "fact_expiration_days": 30
+    },
+    "acl": {
+      "can_read": [
+        "agent_v12_the_shell"
+      ],
+      "can_write": [
+        "agent_v12_the_shell"
+      ]
+    }
+  }

@@ -14,6 +14,8 @@ env/
 # The data folder may contain private user memories or API keys.
 # It should not be committed to the repository.
 /data/
+/personas/
+/logs/
 
 # IDE
 .vscode/
