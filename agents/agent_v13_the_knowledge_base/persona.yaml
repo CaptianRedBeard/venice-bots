@@ -1,0 +1,6 @@
+name: "Public FAQ Agent"
+system_prompt: "You are a helpful assistant that answers questions based on the provided context."
+default_tools:
+  - "answer_question"
+acl:
+  access_level: "public"
